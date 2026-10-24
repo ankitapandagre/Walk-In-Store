@@ -11,6 +11,16 @@ const books = [
 const searchInput=document.getElementById("searchInput");
 const areaFilter=document.getElementById("areaFilter");
 const availableOnly=document.getElementById("availableOnly");
+
+const clearFiltersButton = document.getElementById("clearFilters");
+
+clearFiltersButton.addEventListener("click", () => {
+    searchInput.value = "";
+    areaFilter.value = "all";
+    availableOnly.checked = false;
+    renderBooks();
+});
+
 const bookResults=document.getElementById("bookResults");
 const resultCount=document.getElementById("resultCount");
 const noResults=document.getElementById("noResults");

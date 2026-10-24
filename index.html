@@ -22,7 +22,13 @@
     <section class="search-section" id="find-books">
       <div class="section-heading"><p class="eyebrow">START SEARCHING</p><h2>What book are you looking for?</h2><p>Search by title, author, or school-book name.</p></div>
       <div class="search-bar"><span aria-hidden="true">🔎</span><input id="searchInput" type="search" placeholder="Try “Anne Frank” or “RD Sharma”" aria-label="Search books"><button id="searchButton" class="primary-button" type="button">Search</button></div>
-      <div class="filters"><label for="areaFilter">Area</label><select id="areaFilter"><option value="all">All areas</option><option value="Bhopal">Bhopal</option><option value="Delhi">Delhi</option><option value="Indore">Indore</option></select><label class="checkbox-label"><input id="availableOnly" type="checkbox"> Available only</label></div>
+      <div class="filters"><label for="areaFilter">Area</label><select id="areaFilter"><option value="all">All areas</option><option value="Bhopal">Bhopal</option><option value="Delhi">Delhi</option><option value="Indore">Indore</option></select><label class="checkbox-label"><input id="availableOnly" type="checkbox"> 
+Available only</label>
+<button id="clearFilters" class="secondary-button" type="button">
+  Clear filters
+</button>
+</div>
+
       <div class="results-top"><h3>Book results</h3><span id="resultCount" class="result-count">6 listings</span></div>
       <div id="bookResults" class="book-grid" aria-live="polite"></div><p id="noResults" class="no-results" hidden>No matching books found. Try another search or area.</p>
     </section>
