@@ -23,6 +23,14 @@
       <div class="section-heading"><p class="eyebrow">START SEARCHING</p><h2>What book are you looking for?</h2><p>Search by title, author, or school-book name.</p></div>
       <div class="search-bar"><span aria-hidden="true">🔎</span><input id="searchInput" type="search" placeholder="Try “Anne Frank” or “RD Sharma”" aria-label="Search books"><button id="searchButton" class="primary-button" type="button">Search</button></div>
       <div class="filters"><label for="areaFilter">Area</label><select id="areaFilter"><option value="all">All areas</option><option value="Bhopal">Bhopal</option><option value="Delhi">Delhi</option><option value="Indore">Indore</option></select><label class="checkbox-label"><input id="availableOnly" type="checkbox"> 
+      
+<label for="sortPrice">Sort by price:</label>
+<select id="sortPrice">
+  <option value="default">Default order</option>
+  <option value="low-high">Price: Low to High</option>
+  <option value="high-low">Price: High to Low</option>
+</select>
+  
 Available only</label>
 <button id="clearFilters" class="secondary-button" type="button">
   Clear filters

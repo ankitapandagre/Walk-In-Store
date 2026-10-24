@@ -11,6 +11,7 @@ const books = [
 const searchInput=document.getElementById("searchInput");
 const areaFilter=document.getElementById("areaFilter");
 const availableOnly=document.getElementById("availableOnly");
+const sortPrice = document.getElementById("sortPrice");
 
 const clearFiltersButton = document.getElementById("clearFilters");
 
@@ -38,8 +39,18 @@ function renderBooks(){
   const matchStock=!availableOnly.checked||book.quantity>0;
   return matchText&&matchArea&&matchStock;
  });
- bookResults.innerHTML="";
- filtered.forEach(book=>{
+ 
+const sortOption = sortPrice.value;
+
+if (sortOption === "low-high") {
+ filtered.sort((a, b) => a.price - b.price);
+} else if (sortOption === "high-low") {
+ filtered.sort((a, b) => b.price - a.price);
+}
+
+bookResults.innerHTML = "";
+filtered.forEach(book => {
+
   const available=book.quantity>0;
   const status=available?`Available · ${book.quantity} left`:"Out of stock";
   const mapUrl=`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(book.address)}`;
@@ -60,6 +71,7 @@ document.getElementById("searchButton").addEventListener("click",renderBooks);
 searchInput.addEventListener("input",renderBooks);
 areaFilter.addEventListener("change",renderBooks);
 availableOnly.addEventListener("change",renderBooks);
+sortPrice.addEventListener("change", renderBooks);
 sellerButton.addEventListener("click",()=>{
  sellerFormSection.hidden=!sellerFormSection.hidden;
  if(!sellerFormSection.hidden)sellerFormSection.scrollIntoView({behavior:"smooth"});
