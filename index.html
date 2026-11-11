@@ -61,6 +61,27 @@
         <article class="step-card"><span>03</span><h3>Walk in</h3><p>Open the location and visit the shop to buy the book.</p></article>
       </div>
     </section>
+    <section class="auth-section" id="shopkeeper-login">
+  <h2>Shopkeeper Account</h2>
+  <p>Create an account or log in to manage your book listings.</p>
+
+  <form id="signupForm">
+    <h3>Create Account</h3>
+    <input type="email" id="signupEmail" placeholder="Email address" required>
+    <input type="password" id="signupPassword" placeholder="Password" required>
+    <button type="submit">Sign Up</button>
+  </form>
+
+  <form id="loginForm">
+    <h3>Login</h3>
+    <input type="email" id="loginEmail" placeholder="Email address" required>
+    <input type="password" id="loginPassword" placeholder="Password" required>
+    <button type="submit">Login</button>
+  </form>
+
+  <button id="logoutButton" type="button" hidden>Logout</button>
+  <p id="authMessage"></p>
+</section>
     <section class="shopkeeper-section" id="shopkeeper"><div><p class="eyebrow">FOR LOCAL BOOKSELLERS</p><h2>Help readers find your store.</h2><p>In the full version, shopkeepers will be able to list books and keep their stock information updated.</p></div><button id="sellerButton" class="secondary-button" type="button">Preview add-book form</button></section>
     <section id="sellerFormSection" class="seller-form-section" hidden>
       <div class="section-heading"><p class="eyebrow">DEMO FORM</p><h2>Add a book listing</h2><p>This beginner demo adds a listing to this page only. It does not save to a real database.</p></div>
@@ -77,6 +98,8 @@
     <section class="notice"><strong>Demo note:</strong> Store names, prices, stock, and distances are example data. This version does not use live GPS, a real database, or a live map yet.</section>
   </main>
   <footer><a class="logo" href="#">📚 Walk-In Store</a><p>Find the book. Find the store. Walk in.</p><small>Beginner-friendly project prototype</small></footer>
-  <script src="script.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase.js"></script>
+<script src="script.js"></script>
 </body>
 </html>
