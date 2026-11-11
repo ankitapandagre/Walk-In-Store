@@ -229,3 +229,22 @@ resendConfirmationButton.addEventListener("click", async () => {
 
     authMessage.textContent = "Confirmation email sent! Please check your inbox.";
 });
+// CHECK EXISTING LOGIN SESSION
+
+async function checkLoginSession() {
+    const { data, error } = await supabaseClient.auth.getSession();
+
+    if (error) {
+        console.log(error.message);
+        return;
+    }
+
+    if (data.session) {
+        logoutButton.hidden = false;
+        authMessage.textContent = "You are logged in!";
+    } else {
+        logoutButton.hidden = true;
+    }
+}
+
+checkLoginSession();
