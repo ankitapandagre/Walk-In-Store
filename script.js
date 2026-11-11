@@ -22,7 +22,7 @@ const sellerButton=document.getElementById("sellerButton");
 const sellerFormSection=document.getElementById("sellerFormSection");
 const sellerForm=document.getElementById("sellerForm");
 const formMessage=document.getElementById("formMessage");
-const API_URL = "http://localhost:5000";
+const API_URL = "https://walk-in-store-backend.onrender.com";
 
 async function loadBooks() {
     try {
