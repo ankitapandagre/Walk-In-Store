@@ -108,13 +108,25 @@ sellerForm.addEventListener("submit", async (event) => {
     };
 
     try {
-        const response = await fetch(`${API_URL}/books`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(newBook)
-        });
+        // Get the current shopkeeper login session
+const { data: sessionData, error: sessionError } =
+    await supabaseClient.auth.getSession();
+
+if (sessionError || !sessionData.session) {
+    throw new Error("Please login before adding a book.");
+}
+
+const token = sessionData.session.access_token;
+
+// Send the book with the login token
+const response = await fetch(`${API_URL}/books`, {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+    },
+    body: JSON.stringify(newBook)
+});
 
         const result = await response.json();
 

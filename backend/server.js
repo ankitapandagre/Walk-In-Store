@@ -11,32 +11,64 @@ const supabase = createClient(
     process.env.SUPABASE_URL,
     process.env.SUPABASE_SECRET_KEY
 );
+// Supabase client for verifying shopkeeper login tokens
+const supabaseAuth = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SECRET_KEY
+);
 
 // Middleware
 app.use(cors());
 
-// Temporarily block public write operations
-app.use((req, res, next) => {
-    if (["POST", "PUT", "DELETE"].includes(req.method)) {
-        return res.status(403).json({
-            message: "Book management is temporarily disabled."
-        });
-    }
 
-    next();
-});
 
 app.use(express.json());
-// Temporarily block public write operations
-app.use((req, res, next) => {
-    if (["POST", "PUT", "DELETE"].includes(req.method)) {
-        return res.status(403).json({
-            message: "Book management is temporarily disabled."
+// Verify shopkeeper authentication
+async function verifyShopkeeper(req, res, next) {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({
+            message: "Please login first."
         });
     }
 
+    const token = authHeader.split(" ")[1];
+
+    // Verify the login token
+    const { data, error } = await supabaseAuth.auth.getUser(token);
+
+    if (error || !data.user) {
+        return res.status(401).json({
+            message: "Invalid or expired login session."
+        });
+    }
+
+    // Check whether this user is an approved shopkeeper
+    const { data: shopkeeper, error: approvalError } =
+        await supabase
+            .from("shopkeepers")
+            .select("approved")
+            .eq("user_id", data.user.id)
+            .maybeSingle();
+
+    if (approvalError) {
+        console.error("Approval check failed:", approvalError.message);
+
+        return res.status(500).json({
+            message: "Unable to verify shopkeeper approval."
+        });
+    }
+
+    if (!shopkeeper || shopkeeper.approved !== true) {
+        return res.status(403).json({
+            message: "Your shopkeeper account is not approved yet."
+        });
+    }
+
+    req.user = data.user;
     next();
-});
+}
 
 // Temporary book data
 let books = [
@@ -115,7 +147,7 @@ app.get("/books/search", async (req, res) => {
 
 
 // POST: Add a new book
-app.post("/books", async (req, res) => {
+app.post("/books", verifyShopkeeper, async (req, res) => {
     const { title, author, store, area, price, quantity, address } = req.body;
 
     if (!title || !author || !store || !area ||
@@ -138,14 +170,15 @@ app.post("/books", async (req, res) => {
 
     const { data, error } = await supabase
         .from("books")
-        .insert([{
+                .insert([{
             title,
             author,
             store,
             area,
             price: Number(price),
             quantity: Number(quantity),
-            address
+            address,
+            owner_id: req.user.id
         }])
         .select()
         .single();
@@ -166,7 +199,7 @@ app.post("/books", async (req, res) => {
 // PUT: Update book stock
 
 // PUT: Update book stock
-app.put("/books/:id", async (req, res) => {
+app.put("/books/:id", verifyShopkeeper, async (req, res) => {
     const id = Number(req.params.id);
     const quantity = Number(req.body.quantity);
 
@@ -190,6 +223,7 @@ app.put("/books/:id", async (req, res) => {
         .from("books")
         .update({ quantity: quantity })
         .eq("id", id)
+        .eq("owner_id", req.user.id)
         .select()
         .maybeSingle();
 
@@ -216,7 +250,7 @@ app.put("/books/:id", async (req, res) => {
 // DELETE: Remove a book
 
 // DELETE: Remove a book
-app.delete("/books/:id", async (req, res) => {
+app.delete("/books/:id", verifyShopkeeper, async (req, res) => {
     const id = Number(req.params.id);
 
     if (!Number.isInteger(id) || id <= 0) {
@@ -229,6 +263,7 @@ app.delete("/books/:id", async (req, res) => {
         .from("books")
         .delete()
         .eq("id", id)
+        .eq("owner_id", req.user.id)
         .select()
         .maybeSingle();
 
