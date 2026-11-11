@@ -14,7 +14,29 @@ const supabase = createClient(
 
 // Middleware
 app.use(cors());
+
+// Temporarily block public write operations
+app.use((req, res, next) => {
+    if (["POST", "PUT", "DELETE"].includes(req.method)) {
+        return res.status(403).json({
+            message: "Book management is temporarily disabled."
+        });
+    }
+
+    next();
+});
+
 app.use(express.json());
+// Temporarily block public write operations
+app.use((req, res, next) => {
+    if (["POST", "PUT", "DELETE"].includes(req.method)) {
+        return res.status(403).json({
+            message: "Book management is temporarily disabled."
+        });
+    }
+
+    next();
+});
 
 // Temporary book data
 let books = [
