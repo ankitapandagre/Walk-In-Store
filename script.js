@@ -205,3 +205,27 @@ logoutButton.addEventListener("click", async () => {
     authMessage.textContent = "Logged out successfully!";
     logoutButton.hidden = true;
 });
+// Resend confirmation email
+
+const resendConfirmationButton = document.getElementById("resendConfirmationButton");
+
+resendConfirmationButton.addEventListener("click", async () => {
+    const email = document.getElementById("signupEmail").value;
+
+    if (!email) {
+        authMessage.textContent = "Please enter your email address first.";
+        return;
+    }
+
+    const { error } = await supabaseClient.auth.resend({
+        type: "signup",
+        email: email
+    });
+
+    if (error) {
+        authMessage.textContent = error.message;
+        return;
+    }
+
+    authMessage.textContent = "Confirmation email sent! Please check your inbox.";
+});
