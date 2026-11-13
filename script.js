@@ -413,9 +413,109 @@ function renderMyListings() {
                 <p>📍 ${escapeHTML(book.area)}</p>
                 <p class="price">₹${escapeHTML(book.price)}</p>
                 <p>Stock: ${escapeHTML(book.quantity)}</p>
+                        </div>
+
+            <div class="book-actions">
+                <button class="edit-button">Edit</button>
+                <button class="delete-button">Delete</button>
             </div>
         `;
+        const editButton = card.querySelector(".edit-button");
 
+editButton.addEventListener("click", async () => {
+
+    const newQuantity = prompt(
+        "Enter updated quantity:",
+        book.quantity
+    );
+
+    if (newQuantity === null) return;
+
+    if (
+        newQuantity.trim() === "" ||
+        !Number.isInteger(Number(newQuantity)) ||
+        Number(newQuantity) < 0
+    ) {
+        alert("Please enter a valid quantity.");
+        return;
+    }
+
+    try {
+        const token = await getAccessToken();
+
+        if (!token) {
+            alert("Please log in again.");
+            return;
+        }
+
+        const response = await fetch(`${API_URL}/books/${book.id}`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                quantity: Number(newQuantity)
+            })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            alert(result.message || "Could not update book.");
+            return;
+        }
+
+        alert("Book quantity updated successfully!");
+        await loadBooks();
+
+    } catch (error) {
+        console.error("Error updating book:", error);
+        alert("Something went wrong while updating the book.");
+    }
+
+});
+const deleteButton = card.querySelector(".delete-button");
+
+deleteButton.addEventListener("click", async () => {
+
+    const confirmed = confirm(
+        `Are you sure you want to delete "${book.title}"?`
+    );
+
+    if (!confirmed) return;
+
+    try {
+        const token = await getAccessToken();
+
+        if (!token) {
+            alert("Please log in again.");
+            return;
+        }
+
+        const response = await fetch(`${API_URL}/books/${book.id}`, {
+            method: "DELETE",
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            alert(result.message || "Could not delete book.");
+            return;
+        }
+
+        alert("Book deleted successfully!");
+        await loadBooks();
+
+    } catch (error) {
+        console.error("Error deleting book:", error);
+        alert("Something went wrong while deleting the book.");
+    }
+
+});
         myListingsResults.appendChild(card);
 
     });
