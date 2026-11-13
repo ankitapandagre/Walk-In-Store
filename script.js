@@ -691,6 +691,57 @@ sellerForm.addEventListener("submit", async (event) => {
 
 });
 
+// ==========================================
+// SHOPKEEPER SIGNUP
+// ==========================================
+
+signupForm.addEventListener("submit", async (event) => {
+
+    event.preventDefault();
+
+    const email =
+        document.getElementById("signupEmail").value.trim();
+
+    const password =
+        document.getElementById("signupPassword").value;
+
+    const shopName =
+        document.getElementById("signupShopName").value.trim();
+
+    const shopAddress =
+        document.getElementById("signupShopAddress").value.trim();
+
+    try {
+
+        const { error } = await supabaseClient.auth.signUp({
+            email: email,
+            password: password,
+            options: {
+                data: {
+                    shop_name: shopName,
+                    shop_address: shopAddress
+                }
+            }
+        });
+
+        if (error) {
+            throw error;
+        }
+
+        authMessage.textContent =
+            "Signup successful! Your shop application is pending admin approval. Please check your email for confirmation.";
+
+        signupForm.reset();
+
+    } catch (error) {
+
+        console.error("Signup error:", error);
+        authMessage.textContent = error.message;
+
+    }
+
+});
+
 
 // ==========================================
 // SHOPKEEPER LOGIN
