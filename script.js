@@ -141,12 +141,17 @@ function renderBooks() {
         // BOOK CARD HTML
 
         card.innerHTML = `
-            <div class="book-cover" aria-hidden="true">
-                <div>
-                    ${escapeHTML(book.icon || "📚")}
-                    <span>${escapeHTML(book.title)}</span>
-                </div>
-            </div>
+            <div class="book-cover">
+    ${book.image_url
+        ? `<img src="${escapeHTML(book.image_url)}"
+                alt="Cover of ${escapeHTML(book.title)}"
+                style="width:100%; height:100%; object-fit:cover;">`
+        : `<div>
+                ${escapeHTML(book.icon || "📚")}
+                <span>${escapeHTML(book.title)}</span>
+           </div>`
+    }
+</div>
 
             <div class="book-info">
 
@@ -406,7 +411,16 @@ function renderMyListings() {
         card.className = "book-card";
 
         card.innerHTML = `
-            <div class="book-info">
+    <div class="book-cover">
+        ${book.image_url
+            ? `<img src="${escapeHTML(book.image_url)}"
+                    alt="Cover of ${escapeHTML(book.title)}"
+                    style="width:100%; height:100%; object-fit:cover;">`
+            : `<div>📚</div>`
+        }
+    </div>
+
+    <div class="book-info">
                 <h4>${escapeHTML(book.title)}</h4>
                 <p class="author">by ${escapeHTML(book.author)}</p>
                 <p>${escapeHTML(book.store)}</p>
@@ -567,29 +581,13 @@ sellerButton.addEventListener("click", () => {
 // ADD NEW BOOK
 // ==========================================
 
+// ==========================================
+// ADD NEW BOOK
+// ==========================================
+
 sellerForm.addEventListener("submit", async (event) => {
 
     event.preventDefault();
-
-    const area = document.getElementById("newArea").value;
-
-    const newBook = {
-
-        title: document.getElementById("newTitle").value.trim(),
-
-        author: document.getElementById("newAuthor").value.trim(),
-
-        store: document.getElementById("newStore").value.trim(),
-
-        area: area,
-
-        price: Number(document.getElementById("newPrice").value),
-
-        quantity: Number(document.getElementById("newQuantity").value),
-
-        address: area
-
-    };
 
     try {
 
@@ -598,6 +596,57 @@ sellerForm.addEventListener("submit", async (event) => {
         if (!token) {
             throw new Error("Please login before adding a book.");
         }
+
+        const area = document.getElementById("newArea").value;
+        const imageFile = document.getElementById("newImage").files[0];
+
+        let image_url = null;
+
+        if (imageFile) {
+
+            if (!imageFile.type.startsWith("image/")) {
+                throw new Error("Please select a valid image.");
+            }
+
+            if (imageFile.size > 5 * 1024 * 1024) {
+                throw new Error("Image size must be less than 5 MB.");
+            }
+
+            const safeFileName = imageFile.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+            const filePath = `${currentUserId}/${Date.now()}-${safeFileName}`;
+
+            const { data: uploadData, error: uploadError } =
+                await supabaseClient.storage
+                    .from("book-images")
+                    .upload(filePath, imageFile, {
+                        upsert: false,
+                        contentType: imageFile.type
+                    });
+
+            if (uploadError) {
+                throw uploadError;
+            }
+
+            const { data: publicUrlData } =
+                supabaseClient.storage
+                    .from("book-images")
+                    .getPublicUrl(uploadData.path);
+
+            image_url = publicUrlData.publicUrl;
+        }
+
+        const newBook = {
+
+            title: document.getElementById("newTitle").value.trim(),
+            author: document.getElementById("newAuthor").value.trim(),
+            store: document.getElementById("newStore").value.trim(),
+            area: area,
+            price: Number(document.getElementById("newPrice").value),
+            quantity: Number(document.getElementById("newQuantity").value),
+            address: area,
+            image_url: image_url
+
+        };
 
         const response = await fetch(`${API_URL}/books`, {
 
@@ -615,9 +664,7 @@ sellerForm.addEventListener("submit", async (event) => {
         const result = await response.json();
 
         if (!response.ok) {
-            throw new Error(
-                result.message || "Unable to add book"
-            );
+            throw new Error(result.message || "Unable to add book");
         }
 
         formMessage.textContent = "Book added successfully!";
@@ -638,43 +685,12 @@ sellerForm.addEventListener("submit", async (event) => {
     } catch (error) {
 
         console.error("Error adding book:", error);
-
         formMessage.textContent = error.message;
 
     }
 
 });
 
-// ==========================================
-// SHOPKEEPER SIGNUP
-// ==========================================
-
-signupForm.addEventListener("submit", async (event) => {
-
-    event.preventDefault();
-
-    const email =
-        document.getElementById("signupEmail").value;
-
-    const password =
-        document.getElementById("signupPassword").value;
-
-    const { error } = await supabaseClient.auth.signUp({
-        email: email,
-        password: password
-    });
-
-    if (error) {
-
-        authMessage.textContent = error.message;
-        return;
-
-    }
-
-    authMessage.textContent =
-        "Signup successful! Please check your email for confirmation.";
-
-});
 
 // ==========================================
 // SHOPKEEPER LOGIN

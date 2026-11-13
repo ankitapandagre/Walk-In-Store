@@ -148,8 +148,7 @@ app.get("/books/search", async (req, res) => {
 
 // POST: Add a new book
 app.post("/books", verifyShopkeeper, async (req, res) => {
-    const { title, author, store, area, price, quantity, address } = req.body;
-
+const { title, author, store, area, price, quantity, address, image_url } = req.body;
     if (!title || !author || !store || !area ||
         price === undefined || quantity === undefined || !address) {
         return res.status(400).json({
@@ -170,16 +169,17 @@ app.post("/books", verifyShopkeeper, async (req, res) => {
 
     const { data, error } = await supabase
         .from("books")
-                .insert([{
-            title,
-            author,
-            store,
-            area,
-            price: Number(price),
-            quantity: Number(quantity),
-            address,
-            owner_id: req.user.id
-        }])
+               .insert([{
+    title,
+    author,
+    store,
+    area,
+    price: Number(price),
+    quantity: Number(quantity),
+    address,
+    image_url: image_url || null,
+    owner_id: req.user.id
+}])
         .select()
         .single();
 

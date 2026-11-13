@@ -105,7 +105,15 @@
         <label>Area<select id="newArea" required><option value="Bhopal">Bhopal</option><option value="Delhi">Delhi</option><option value="Indore">Indore</option></select></label>
         <label>Price (₹)<input id="newPrice" type="number" min="0" required placeholder="250"></label>
         <label>Quantity<input id="newQuantity" type="number" min="0" required placeholder="3"></label>
-        <button class="primary-button" type="submit">Add listing</button>
+        <label>
+    Book cover image
+    <input
+        id="newImage"
+        type="file"
+        accept="image/*"
+    >
+</label>
+<button class="primary-button" type="submit">Add listing</button>
       </form><p id="formMessage" class="form-message" aria-live="polite"></p>
     </section>
     <section class="notice"><strong>Demo note:</strong> Store names, prices, stock, and distances are example data. This version does not use live GPS, a real database, or a live map yet.</section>
