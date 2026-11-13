@@ -19,6 +19,8 @@ const sortPrice = document.getElementById("sortPrice");
 
 const clearFiltersButton = document.getElementById("clearFilters");
 const bookResults = document.getElementById("bookResults");
+const myListingsResults = document.getElementById("myListingsResults");
+const myListingsEmpty = document.getElementById("myListingsEmpty");
 const resultCount = document.getElementById("resultCount");
 const noResults = document.getElementById("noResults");
 
@@ -371,7 +373,52 @@ Demo listing only — please confirm availability with the store.`
         `${filtered.length} listing${filtered.length === 1 ? "" : "s"}`;
 
     noResults.hidden = filtered.length !== 0;
+renderMyListings();
+}
+// ==========================================
+// MY LISTINGS
+// ==========================================
 
+function renderMyListings() {
+
+    myListingsResults.innerHTML = "";
+
+    if (!currentUserId) {
+        myListingsEmpty.hidden = false;
+        myListingsEmpty.textContent = "Please log in to view your listings.";
+        return;
+    }
+
+    const myBooks = books.filter(book =>
+        book.owner_id === currentUserId
+    );
+
+    myListingsEmpty.hidden = myBooks.length !== 0;
+
+    if (myBooks.length === 0) {
+        myListingsEmpty.textContent = "You haven't added any books yet.";
+        return;
+    }
+
+    myBooks.forEach(book => {
+
+        const card = document.createElement("article");
+        card.className = "book-card";
+
+        card.innerHTML = `
+            <div class="book-info">
+                <h4>${escapeHTML(book.title)}</h4>
+                <p class="author">by ${escapeHTML(book.author)}</p>
+                <p>${escapeHTML(book.store)}</p>
+                <p>📍 ${escapeHTML(book.area)}</p>
+                <p class="price">₹${escapeHTML(book.price)}</p>
+                <p>Stock: ${escapeHTML(book.quantity)}</p>
+            </div>
+        `;
+
+        myListingsResults.appendChild(card);
+
+    });
 }
 
 // ==========================================
