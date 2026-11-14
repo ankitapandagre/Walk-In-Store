@@ -160,7 +160,10 @@ app.get("/", (req, res) => {
 });
 
 // GET: Fetch all books
+
+// GET: Fetch all books with shopkeeper verification status
 app.get("/books", async (req, res) => {
+
     const { data, error } = await supabase
         .from("books")
         .select("*")
@@ -173,8 +176,35 @@ app.get("/books", async (req, res) => {
         });
     }
 
-    res.json(data);
+    // Get approved shopkeepers
+    const { data: shopkeepers, error: shopkeeperError } =
+        await supabase
+            .from("shopkeepers")
+            .select("user_id, approved")
+            .eq("approved", true);
+
+    if (shopkeeperError) {
+        console.error("Shopkeeper fetch error:", shopkeeperError.message);
+        return res.status(500).json({
+            message: "Unable to fetch verification details."
+        });
+    }
+
+    // Attach verification status to each book
+    const verifiedUsers = new Set(
+        shopkeepers.map(shop => shop.user_id)
+    );
+
+    const booksWithVerification = data.map(book => ({
+        ...book,
+        is_verified: book.owner_id
+            ? verifiedUsers.has(book.owner_id)
+            : false
+    }));
+
+    res.json(booksWithVerification);
 });
+
 
 // GET: Search books
 app.get("/books/search", async (req, res) => {

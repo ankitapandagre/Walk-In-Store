@@ -161,9 +161,14 @@ function renderBooks() {
                     by ${escapeHTML(book.author)}
                 </p>
 
-                <p class="store-line">
-                    ${escapeHTML(book.store)}
-                </p>
+                
+<p class="store-line">
+    ${escapeHTML(book.store)}
+    ${book.is_verified
+        ? `<span class="verified-badge">✓ Verified</span>`
+        : ""}
+</p>
+
 
                 <p class="store-name">
                     📍 ${escapeHTML(book.area)} ·
@@ -423,7 +428,14 @@ function renderMyListings() {
     <div class="book-info">
                 <h4>${escapeHTML(book.title)}</h4>
                 <p class="author">by ${escapeHTML(book.author)}</p>
-                <p>${escapeHTML(book.store)}</p>
+                
+<p>
+    ${escapeHTML(book.store)}
+    ${book.is_verified
+        ? `<span class="verified-badge">✓ Verified</span>`
+        : ""}
+</p>
+
                 <p>📍 ${escapeHTML(book.area)}</p>
                 <p class="price">₹${escapeHTML(book.price)}</p>
                 <p>Stock: ${escapeHTML(book.quantity)}</p>
