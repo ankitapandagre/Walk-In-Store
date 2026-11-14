@@ -75,12 +75,41 @@
   <h2>Shopkeeper Account</h2>
   <p>Create an account or log in to manage your book listings.</p>
 
-  <form id="signupForm">
+  
+<form id="signupForm">
     <h3>Create Account</h3>
-    <input type="email" id="signupEmail" placeholder="Email address" required>
-    <input type="password" id="signupPassword" placeholder="Password" required>
+
+    <input
+        type="text"
+        id="signupShopName"
+        placeholder="Shop name"
+        required
+    >
+
+    <input
+        type="text"
+        id="signupShopAddress"
+        placeholder="Shop address"
+        required
+    >
+
+    <input
+        type="email"
+        id="signupEmail"
+        placeholder="Email address"
+        required
+    >
+
+    <input
+        type="password"
+        id="signupPassword"
+        placeholder="Password"
+        required
+    >
+
     <button type="submit">Sign Up</button>
-  </form>
+</form>
+
   <button id="resendConfirmationButton" type="button">
     Resend Confirmation Email
 </button>

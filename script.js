@@ -694,7 +694,8 @@ sellerForm.addEventListener("submit", async (event) => {
 // ==========================================
 // SHOPKEEPER SIGNUP
 // ==========================================
-
+console.log("Shop name element:", document.getElementById("signupShopName"));
+console.log("Signup form:", signupForm);
 signupForm.addEventListener("submit", async (event) => {
 
     event.preventDefault();
