@@ -775,6 +775,31 @@ loginForm.addEventListener("submit", async (event) => {
 
     currentUserId = data.user.id;
 
+// Check whether the logged-in user is an admin
+const { data: sessionData } =
+    await supabaseClient.auth.getSession();
+
+const accessToken = sessionData.session.access_token;
+
+try {
+    const response = await fetch(`${API_URL}/admin/shopkeepers`, {
+        headers: {
+            Authorization: `Bearer ${accessToken}`
+        }
+    });
+
+    if (response.ok) {
+        document.getElementById("adminDashboard").hidden = false;
+        loadAdminApplications();
+    } else {
+        document.getElementById("adminDashboard").hidden = true;
+    }
+
+} catch (error) {
+    console.error("Admin check failed:", error);
+}
+
+
     authMessage.textContent = "Login successful!";
 
     logoutButton.hidden = false;
@@ -894,3 +919,112 @@ async function initializeWebsite() {
 }
 
 initializeWebsite();
+
+// ==========================================
+// LOAD ADMIN APPLICATIONS
+// ==========================================
+
+async function loadAdminApplications() {
+
+    const container = document.getElementById("adminApplications");
+    const message = document.getElementById("adminMessage");
+
+    container.innerHTML = "Loading applications...";
+
+    const { data } = await supabaseClient.auth.getSession();
+    const accessToken = data.session.access_token;
+
+    try {
+
+        const response = await fetch(`${API_URL}/admin/shopkeepers`, {
+            headers: {
+                Authorization: `Bearer ${accessToken}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error("Unable to load applications.");
+        }
+
+        const applications = await response.json();
+
+        container.innerHTML = "";
+
+        if (applications.length === 0) {
+            message.textContent = "No pending applications.";
+            return;
+        }
+
+        message.textContent = "";
+
+        applications.forEach(shop => {
+
+            const card = document.createElement("div");
+
+            card.innerHTML = `
+                <h3>${shop.shop_name || "Unnamed Shop"}</h3>
+                <p>Address: ${shop.shop_address || "Not provided"}</p>
+                <p>Status: ${shop.status}</p>
+                <button onclick="updateShopkeeperStatus('${shop.user_id}', 'approved')">
+                    Approve
+                </button>
+                <button onclick="updateShopkeeperStatus('${shop.user_id}', 'rejected')">
+                    Reject
+                </button>
+            `;
+
+            container.appendChild(card);
+
+        });
+
+    } catch (error) {
+
+        console.error("Application loading error:", error);
+        message.textContent = error.message;
+
+    }
+}
+
+// ==========================================
+// UPDATE SHOPKEEPER APPLICATION STATUS
+// ==========================================
+
+async function updateShopkeeperStatus(userId, status) {
+
+    const { data } = await supabaseClient.auth.getSession();
+    const accessToken = data.session.access_token;
+
+    try {
+
+        const response = await fetch(
+            `${API_URL}/admin/shopkeepers/${userId}`,
+            {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${accessToken}`
+                },
+                body: JSON.stringify({ status: status })
+            }
+        );
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.message || "Status update failed.");
+        }
+
+        document.getElementById("adminMessage").textContent =
+            result.message;
+
+        loadAdminApplications();
+
+    } catch (error) {
+
+        console.error("Status update error:", error);
+
+        document.getElementById("adminMessage").textContent =
+            error.message;
+
+    }
+}
