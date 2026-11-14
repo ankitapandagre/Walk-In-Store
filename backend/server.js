@@ -70,6 +70,56 @@ async function verifyShopkeeper(req, res, next) {
     next();
 }
 
+// ==========================================
+// VERIFY ADMIN AUTHENTICATION
+// ==========================================
+
+async function verifyAdmin(req, res, next) {
+
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({
+            message: "Please login first."
+        });
+    }
+
+    const token = authHeader.split(" ")[1];
+
+    const { data, error } =
+        await supabaseAuth.auth.getUser(token);
+
+    if (error || !data.user) {
+        return res.status(401).json({
+            message: "Invalid or expired login session."
+        });
+    }
+
+    const { data: admin, error: adminError } =
+        await supabase
+            .from("admins")
+            .select("user_id")
+            .eq("user_id", data.user.id)
+            .maybeSingle();
+
+    if (adminError) {
+        console.error("Admin verification failed:", adminError.message);
+
+        return res.status(500).json({
+            message: "Unable to verify admin access."
+        });
+    }
+
+    if (!admin) {
+        return res.status(403).json({
+            message: "Admin access denied."
+        });
+    }
+
+    req.user = data.user;
+    next();
+}
+
 // Temporary book data
 let books = [
     {
@@ -285,6 +335,75 @@ app.delete("/books/:id", verifyShopkeeper, async (req, res) => {
     });
 });
 
+
+// ==========================================
+// ADMIN: GET PENDING SHOPKEEPERS
+// ==========================================
+
+app.get("/admin/shopkeepers", verifyAdmin, async (req, res) => {
+
+    const { data, error } = await supabase
+        .from("shopkeepers")
+        .select("user_id, shop_name, shop_address, status, created_at")
+        .eq("status", "pending")
+        .order("created_at", { ascending: true });
+
+    if (error) {
+        console.error("Admin fetch error:", error.message);
+
+        return res.status(500).json({
+            message: "Unable to fetch applications."
+        });
+    }
+
+    res.json(data);
+});
+
+
+// ==========================================
+// ADMIN: APPROVE OR REJECT SHOPKEEPER
+// ==========================================
+
+app.patch("/admin/shopkeepers/:userId", verifyAdmin, async (req, res) => {
+
+    const { status } = req.body;
+
+    if (!["approved", "rejected"].includes(status)) {
+        return res.status(400).json({
+            message: "Invalid application status."
+        });
+    }
+
+    const { data, error } = await supabase
+        .from("shopkeepers")
+        .update({
+            status: status,
+            approved: status === "approved"
+        })
+        .eq("user_id", req.params.userId)
+        .eq("status", "pending")
+        .select()
+        .maybeSingle();
+
+    if (error) {
+        console.error("Admin update error:", error.message);
+
+        return res.status(500).json({
+            message: "Unable to update application."
+        });
+    }
+
+    if (!data) {
+        return res.status(404).json({
+            message: "Pending application not found."
+        });
+    }
+
+    res.json({
+        message: `Shopkeeper ${status} successfully!`,
+        shopkeeper: data
+    });
+});
 
 // Start server
 app.listen(PORT, () => {
