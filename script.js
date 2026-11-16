@@ -655,7 +655,6 @@ sellerForm.addEventListener("submit", async (event) => {
             area: area,
             price: Number(document.getElementById("newPrice").value),
             quantity: Number(document.getElementById("newQuantity").value),
-            address: area,
             image_url: image_url
 
         };

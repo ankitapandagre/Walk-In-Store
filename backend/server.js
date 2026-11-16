@@ -227,10 +227,13 @@ app.get("/books/search", async (req, res) => {
 
 
 // POST: Add a new book
+
 app.post("/books", verifyShopkeeper, async (req, res) => {
-const { title, author, store, area, price, quantity, address, image_url } = req.body;
+
+    const { title, author, store, area, price, quantity, image_url } = req.body;
+
     if (!title || !author || !store || !area ||
-        price === undefined || quantity === undefined || !address) {
+        price === undefined || quantity === undefined) {
         return res.status(400).json({
             message: "Please provide all book details."
         });
@@ -247,19 +250,33 @@ const { title, author, store, area, price, quantity, address, image_url } = req.
         });
     }
 
+    // Fetch the logged-in shopkeeper's registered address
+    const { data: shopkeeper, error: shopkeeperError } =
+        await supabase
+            .from("shopkeepers")
+            .select("shop_address")
+            .eq("user_id", req.user.id)
+            .single();
+
+    if (shopkeeperError || !shopkeeper?.shop_address?.trim()) {
+        return res.status(400).json({
+            message: "Please add a valid shop address to your account."
+        });
+    }
+
     const { data, error } = await supabase
         .from("books")
-               .insert([{
-    title,
-    author,
-    store,
-    area,
-    price: Number(price),
-    quantity: Number(quantity),
-    address,
-    image_url: image_url || null,
-    owner_id: req.user.id
-}])
+        .insert([{
+            title,
+            author,
+            store,
+            area,
+            price: Number(price),
+            quantity: Number(quantity),
+            address: shopkeeper.shop_address.trim(),
+            image_url: image_url || null,
+            owner_id: req.user.id
+        }])
         .select()
         .single();
 
