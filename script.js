@@ -812,6 +812,7 @@ loginForm.addEventListener("submit", async (event) => {
         if (response.ok) {
             document.getElementById("adminDashboard").hidden = false;
             loadAdminApplications();
+            loadManagedShopkeepers();
         } else {
             document.getElementById("adminDashboard").hidden = true;
         }
@@ -1000,6 +1001,137 @@ async function loadAdminApplications() {
     } catch (error) {
 
         console.error("Application loading error:", error);
+        message.textContent = error.message;
+
+    }
+    // ==========================================
+// LOAD ALL SHOPKEEPER ACCOUNTS
+// ==========================================
+
+async function loadManagedShopkeepers() {
+
+    const container = document.getElementById("managedShopkeepers");
+    const message = document.getElementById("manageAccountsMessage");
+
+    container.innerHTML = "Loading shopkeeper accounts...";
+    message.textContent = "";
+
+    try {
+
+        const { data } = await supabaseClient.auth.getSession();
+
+        if (!data.session) {
+            throw new Error("Please login again.");
+        }
+
+        const accessToken = data.session.access_token;
+
+        const response = await fetch(`${API_URL}/admin/shopkeepers/manage`, {
+            headers: {
+                Authorization: `Bearer ${accessToken}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error("Unable to load shopkeeper accounts.");
+        }
+
+        const shopkeepers = await response.json();
+
+        container.innerHTML = "";
+
+        if (shopkeepers.length === 0) {
+            message.textContent = "No shopkeeper accounts found.";
+            return;
+        }
+
+        shopkeepers.forEach(shop => {
+
+            const card = document.createElement("div");
+
+            const heading = document.createElement("h4");
+            heading.textContent = shop.shop_name || "Unnamed Shop";
+
+            const address = document.createElement("p");
+            address.textContent = `Address: ${shop.shop_address || "Not provided"}`;
+
+            const status = document.createElement("p");
+            status.textContent = `Status: ${shop.status || "Unknown"}`;
+
+            const deleteButton = document.createElement("button");
+            deleteButton.textContent = "Delete Account";
+            deleteButton.addEventListener("click", () => {
+                deleteShopkeeperAccount(shop.user_id, shop.shop_name);
+            });
+
+            card.appendChild(heading);
+            card.appendChild(address);
+            card.appendChild(status);
+            card.appendChild(deleteButton);
+
+            container.appendChild(card);
+
+        });
+
+    } catch (error) {
+
+        console.error("Shopkeeper account loading error:", error);
+        message.textContent = error.message;
+
+    }
+}
+}
+// ==========================================
+// DELETE SHOPKEEPER ACCOUNT
+// ==========================================
+
+async function deleteShopkeeperAccount(userId, shopName) {
+
+    const confirmed = confirm(
+        `Are you sure you want to permanently delete ${shopName || "this shopkeeper"}?\n\nThis will delete their login account, shop profile, book listings and uploaded book images. This action cannot be undone.`
+    );
+
+    if (!confirmed) {
+        return;
+    }
+
+    const message = document.getElementById("manageAccountsMessage");
+    message.textContent = "Deleting account...";
+
+    try {
+
+        const { data } = await supabaseClient.auth.getSession();
+
+        if (!data.session) {
+            throw new Error("Please login again.");
+        }
+
+        const accessToken = data.session.access_token;
+
+        const response = await fetch(
+            `${API_URL}/admin/shopkeepers/${encodeURIComponent(userId)}`,
+            {
+                method: "DELETE",
+                headers: {
+                    Authorization: `Bearer ${accessToken}`
+                }
+            }
+        );
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.message || "Unable to delete account.");
+        }
+
+        message.textContent = result.message;
+
+        await loadManagedShopkeepers();
+        await loadBooks();
+
+    } catch (error) {
+
+        console.error("Shopkeeper deletion error:", error);
         message.textContent = error.message;
 
     }

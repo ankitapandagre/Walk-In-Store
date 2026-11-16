@@ -20,12 +20,15 @@ const supabaseAuth = createClient(
 // Middleware
 app.use(cors({
     origin: [
-        "https://walk-in-store.vercel.app"
+        "https://walk-in-store.vercel.app",
+        "http://localhost:5500",
+        "http://127.0.0.1:5500",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000"
     ],
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"]
 }));
-
 
 
 app.use(express.json({ limit: "100kb" }));
@@ -78,49 +81,57 @@ async function verifyShopkeeper(req, res, next) {
 // ==========================================
 
 async function verifyAdmin(req, res, next) {
+    try {
+        const authHeader = req.headers.authorization;
 
-    const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith("Bearer ")) {
+            return res.status(401).json({
+                message: "Please login first."
+            });
+        }
 
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        return res.status(401).json({
-            message: "Please login first."
-        });
-    }
+        const token = authHeader.split(" ")[1];
 
-    const token = authHeader.split(" ")[1];
+        const { data, error } =
+            await supabaseAuth.auth.getUser(token);
 
-    const { data, error } =
-        await supabaseAuth.auth.getUser(token);
+        if (error || !data.user) {
+            return res.status(401).json({
+                message: "Invalid or expired login session."
+            });
+        }
 
-    if (error || !data.user) {
-        return res.status(401).json({
-            message: "Invalid or expired login session."
-        });
-    }
+        const { data: admin, error: adminError } =
+            await supabase
+                .from("admins")
+                .select("user_id")
+                .eq("user_id", data.user.id)
+                .maybeSingle();
 
-    const { data: admin, error: adminError } =
-        await supabase
-            .from("admins")
-            .select("user_id")
-            .eq("user_id", data.user.id)
-            .maybeSingle();
+        if (adminError) {
+            console.error("Admin verification failed:", adminError.message);
 
-    if (adminError) {
-        console.error("Admin verification failed:", adminError.message);
+            return res.status(500).json({
+                message: "Unable to verify admin access."
+            });
+        }
+
+        if (!admin) {
+            return res.status(403).json({
+                message: "Admin access denied."
+            });
+        }
+
+        req.user = data.user;
+        next();
+
+    } catch (err) {
+        console.error("Admin authentication error:", err);
 
         return res.status(500).json({
-            message: "Unable to verify admin access."
+            message: "Admin authentication failed."
         });
     }
-
-    if (!admin) {
-        return res.status(403).json({
-            message: "Admin access denied."
-        });
-    }
-
-    req.user = data.user;
-    next();
 }
 
 // Temporary book data
@@ -488,6 +499,185 @@ app.patch("/admin/shopkeepers/:userId", verifyAdmin, async (req, res) => {
         message: `Shopkeeper ${status} successfully!`,
         shopkeeper: data
     });
+});
+
+// ==========================================
+// ADMIN: LIST ALL SHOPKEEPER ACCOUNTS
+// ==========================================
+
+app.get("/admin/shopkeepers/manage", verifyAdmin, async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from("shopkeepers")
+            .select("user_id, shop_name, shop_address, status, approved, created_at")
+            .order("created_at", { ascending: false });
+
+        if (error) {
+            console.error("Shopkeeper management error:", error.message);
+
+            return res.status(500).json({
+                message: "Unable to load shopkeeper accounts."
+            });
+        }
+
+        res.json(data);
+
+    } catch (err) {
+        console.error("Account list error:", err);
+
+        res.status(500).json({
+            message: "Unable to load accounts."
+        });
+    }
+});
+
+
+// ==========================================
+// ADMIN: PERMANENTLY DELETE SHOPKEEPER
+// ==========================================
+
+app.delete("/admin/shopkeepers/:userId", verifyAdmin, async (req, res) => {
+    try {
+        const userId = req.params.userId;
+
+        // Validate UUID format
+        const uuidPattern =
+            /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+        if (!uuidPattern.test(userId)) {
+            return res.status(400).json({
+                message: "Invalid account ID."
+            });
+        }
+
+        // Never allow an admin to delete their own account
+        if (userId === req.user.id) {
+            return res.status(403).json({
+                message: "You cannot delete your own admin account."
+            });
+        }
+
+        // Never allow deletion of another admin account
+        const { data: admin, error: adminError } = await supabase
+            .from("admins")
+            .select("user_id")
+            .eq("user_id", userId)
+            .maybeSingle();
+
+        if (adminError) {
+            throw adminError;
+        }
+
+        if (admin) {
+            return res.status(403).json({
+                message: "Admin accounts cannot be deleted here."
+            });
+        }
+
+        // Confirm that this is a registered shopkeeper
+        const { data: shopkeeper, error: shopError } = await supabase
+            .from("shopkeepers")
+            .select("user_id, shop_name")
+            .eq("user_id", userId)
+            .maybeSingle();
+
+        if (shopError) {
+            throw shopError;
+        }
+
+        if (!shopkeeper) {
+            return res.status(404).json({
+                message: "Shopkeeper account not found."
+            });
+        }
+
+        // Find uploaded images belonging to this shopkeeper
+        const imagePaths = [];
+        let offset = 0;
+        const pageSize = 100;
+
+        while (true) {
+            const { data: files, error: storageError } =
+                await supabase.storage
+                    .from("book-images")
+                    .list(userId, {
+                        limit: pageSize,
+                        offset: offset
+                    });
+
+            if (storageError) {
+                throw storageError;
+            }
+
+            if (!files || files.length === 0) {
+                break;
+            }
+
+            files.forEach(file => {
+                imagePaths.push(`${userId}/${file.name}`);
+            });
+
+            offset += files.length;
+
+            if (files.length < pageSize) {
+                break;
+            }
+        }
+
+        // Remove uploaded images
+        if (imagePaths.length > 0) {
+            const { error: imageError } = await supabase.storage
+                .from("book-images")
+                .remove(imagePaths);
+
+            if (imageError) {
+                throw imageError;
+            }
+        }
+
+        // Delete all books belonging to this shopkeeper
+        const { error: booksError } = await supabase
+            .from("books")
+            .delete()
+            .eq("owner_id", userId);
+
+        if (booksError) {
+            throw booksError;
+        }
+
+        // Delete the shopkeeper approval/profile record
+        const { error: profileError } = await supabase
+            .from("shopkeepers")
+            .delete()
+            .eq("user_id", userId);
+
+        if (profileError) {
+            throw profileError;
+        }
+
+        // Permanently delete the Supabase Auth account
+        const { error: authError } =
+            await supabase.auth.admin.deleteUser(userId);
+
+        if (authError) {
+            console.error("Auth account deletion error:", authError.message);
+
+            return res.status(500).json({
+                message: "Listings and shopkeeper profile were removed, but the login account could not be deleted. Please check Supabase."
+            });
+        }
+
+        res.json({
+            message: `${shopkeeper.shop_name || "Shopkeeper"} and their account were permanently deleted.`
+        });
+
+    } catch (err) {
+        console.error("Shopkeeper deletion error:", err);
+
+        res.status(500).json({
+            message: "Unable to complete account deletion."
+        });
+    }
 });
 
 // Start server
