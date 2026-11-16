@@ -1,4 +1,3 @@
-
 // ==========================================
 // WALK-IN STORE - FRONTEND JAVASCRIPT
 // ==========================================
@@ -132,8 +131,16 @@ function renderBooks() {
             ? `Available · ${book.quantity} left`
             : "Out of stock";
 
+        // Search Google Maps using the shop name and its registered address.
+        const mapSearch = [
+            book.store,
+            book.address,
+            book.area,
+            "India"
+        ].filter(Boolean).join(", ");
+
         const mapUrl =
-            `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(book.address || book.area || "")}`;
+            `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapSearch)}`;
 
         const card = document.createElement("article");
         card.className = "book-card";
@@ -161,14 +168,12 @@ function renderBooks() {
                     by ${escapeHTML(book.author)}
                 </p>
 
-                
 <p class="store-line">
     ${escapeHTML(book.store)}
     ${book.is_verified
         ? `<span class="verified-badge">✓ Verified</span>`
         : ""}
 </p>
-
 
                 <p class="store-name">
                     📍 ${escapeHTML(book.area)} ·
@@ -383,8 +388,9 @@ Demo listing only — please confirm availability with the store.`
         `${filtered.length} listing${filtered.length === 1 ? "" : "s"}`;
 
     noResults.hidden = filtered.length !== 0;
-renderMyListings();
+    renderMyListings();
 }
+
 // ==========================================
 // MY LISTINGS
 // ==========================================
@@ -428,7 +434,7 @@ function renderMyListings() {
     <div class="book-info">
                 <h4>${escapeHTML(book.title)}</h4>
                 <p class="author">by ${escapeHTML(book.author)}</p>
-                
+
 <p>
     ${escapeHTML(book.store)}
     ${book.is_verified
@@ -446,102 +452,105 @@ function renderMyListings() {
                 <button class="delete-button">Delete</button>
             </div>
         `;
+
         const editButton = card.querySelector(".edit-button");
 
-editButton.addEventListener("click", async () => {
+        editButton.addEventListener("click", async () => {
 
-    const newQuantity = prompt(
-        "Enter updated quantity:",
-        book.quantity
-    );
+            const newQuantity = prompt(
+                "Enter updated quantity:",
+                book.quantity
+            );
 
-    if (newQuantity === null) return;
+            if (newQuantity === null) return;
 
-    if (
-        newQuantity.trim() === "" ||
-        !Number.isInteger(Number(newQuantity)) ||
-        Number(newQuantity) < 0
-    ) {
-        alert("Please enter a valid quantity.");
-        return;
-    }
-
-    try {
-        const token = await getAccessToken();
-
-        if (!token) {
-            alert("Please log in again.");
-            return;
-        }
-
-        const response = await fetch(`${API_URL}/books/${book.id}`, {
-            method: "PUT",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`
-            },
-            body: JSON.stringify({
-                quantity: Number(newQuantity)
-            })
-        });
-
-        const result = await response.json();
-
-        if (!response.ok) {
-            alert(result.message || "Could not update book.");
-            return;
-        }
-
-        alert("Book quantity updated successfully!");
-        await loadBooks();
-
-    } catch (error) {
-        console.error("Error updating book:", error);
-        alert("Something went wrong while updating the book.");
-    }
-
-});
-const deleteButton = card.querySelector(".delete-button");
-
-deleteButton.addEventListener("click", async () => {
-
-    const confirmed = confirm(
-        `Are you sure you want to delete "${book.title}"?`
-    );
-
-    if (!confirmed) return;
-
-    try {
-        const token = await getAccessToken();
-
-        if (!token) {
-            alert("Please log in again.");
-            return;
-        }
-
-        const response = await fetch(`${API_URL}/books/${book.id}`, {
-            method: "DELETE",
-            headers: {
-                "Authorization": `Bearer ${token}`
+            if (
+                newQuantity.trim() === "" ||
+                !Number.isInteger(Number(newQuantity)) ||
+                Number(newQuantity) < 0
+            ) {
+                alert("Please enter a valid quantity.");
+                return;
             }
+
+            try {
+                const token = await getAccessToken();
+
+                if (!token) {
+                    alert("Please log in again.");
+                    return;
+                }
+
+                const response = await fetch(`${API_URL}/books/${book.id}`, {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        quantity: Number(newQuantity)
+                    })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    alert(result.message || "Could not update book.");
+                    return;
+                }
+
+                alert("Book quantity updated successfully!");
+                await loadBooks();
+
+            } catch (error) {
+                console.error("Error updating book:", error);
+                alert("Something went wrong while updating the book.");
+            }
+
         });
 
-        const result = await response.json();
+        const deleteButton = card.querySelector(".delete-button");
 
-        if (!response.ok) {
-            alert(result.message || "Could not delete book.");
-            return;
-        }
+        deleteButton.addEventListener("click", async () => {
 
-        alert("Book deleted successfully!");
-        await loadBooks();
+            const confirmed = confirm(
+                `Are you sure you want to delete "${book.title}"?`
+            );
 
-    } catch (error) {
-        console.error("Error deleting book:", error);
-        alert("Something went wrong while deleting the book.");
-    }
+            if (!confirmed) return;
 
-});
+            try {
+                const token = await getAccessToken();
+
+                if (!token) {
+                    alert("Please log in again.");
+                    return;
+                }
+
+                const response = await fetch(`${API_URL}/books/${book.id}`, {
+                    method: "DELETE",
+                    headers: {
+                        "Authorization": `Bearer ${token}`
+                    }
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    alert(result.message || "Could not delete book.");
+                    return;
+                }
+
+                alert("Book deleted successfully!");
+                await loadBooks();
+
+            } catch (error) {
+                console.error("Error deleting book:", error);
+                alert("Something went wrong while deleting the book.");
+            }
+
+        });
+
         myListingsResults.appendChild(card);
 
     });
@@ -705,8 +714,10 @@ sellerForm.addEventListener("submit", async (event) => {
 // ==========================================
 // SHOPKEEPER SIGNUP
 // ==========================================
+
 console.log("Shop name element:", document.getElementById("signupShopName"));
 console.log("Signup form:", signupForm);
+
 signupForm.addEventListener("submit", async (event) => {
 
     event.preventDefault();
@@ -754,7 +765,6 @@ signupForm.addEventListener("submit", async (event) => {
 
 });
 
-
 // ==========================================
 // SHOPKEEPER LOGIN
 // ==========================================
@@ -786,30 +796,29 @@ loginForm.addEventListener("submit", async (event) => {
 
     currentUserId = data.user.id;
 
-// Check whether the logged-in user is an admin
-const { data: sessionData } =
-    await supabaseClient.auth.getSession();
+    // Check whether the logged-in user is an admin
+    const { data: sessionData } =
+        await supabaseClient.auth.getSession();
 
-const accessToken = sessionData.session.access_token;
+    const accessToken = sessionData.session.access_token;
 
-try {
-    const response = await fetch(`${API_URL}/admin/shopkeepers`, {
-        headers: {
-            Authorization: `Bearer ${accessToken}`
+    try {
+        const response = await fetch(`${API_URL}/admin/shopkeepers`, {
+            headers: {
+                Authorization: `Bearer ${accessToken}`
+            }
+        });
+
+        if (response.ok) {
+            document.getElementById("adminDashboard").hidden = false;
+            loadAdminApplications();
+        } else {
+            document.getElementById("adminDashboard").hidden = true;
         }
-    });
 
-    if (response.ok) {
-        document.getElementById("adminDashboard").hidden = false;
-        loadAdminApplications();
-    } else {
-        document.getElementById("adminDashboard").hidden = true;
+    } catch (error) {
+        console.error("Admin check failed:", error);
     }
-
-} catch (error) {
-    console.error("Admin check failed:", error);
-}
-
 
     authMessage.textContent = "Login successful!";
 
