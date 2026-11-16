@@ -1004,6 +1004,7 @@ async function loadAdminApplications() {
         message.textContent = error.message;
 
     }
+}
     // ==========================================
 // LOAD ALL SHOPKEEPER ACCOUNTS
 // ==========================================
@@ -1080,7 +1081,7 @@ async function loadManagedShopkeepers() {
 
     }
 }
-}
+
 // ==========================================
 // DELETE SHOPKEEPER ACCOUNT
 // ==========================================
