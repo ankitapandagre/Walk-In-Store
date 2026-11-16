@@ -18,56 +18,59 @@ const supabaseAuth = createClient(
 );
 
 // Middleware
-app.use(cors());
+app.use(cors({
+    origin: [
+        "https://walk-in-store.vercel.app"
+    ],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"]
+}));
 
 
 
-app.use(express.json());
+app.use(express.json({ limit: "100kb" }));
+
 // Verify shopkeeper authentication
 async function verifyShopkeeper(req, res, next) {
-    const authHeader = req.headers.authorization;
+    try {
+        const token = req.headers.authorization?.split(" ")[1];
 
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        return res.status(401).json({
-            message: "Please login first."
-        });
-    }
+        if (!token) {
+            return res.status(401).json({
+                error: "Authentication required"
+            });
+        }
 
-    const token = authHeader.split(" ")[1];
+        const { data, error } = await supabaseAuth.auth.getUser(token);
 
-    // Verify the login token
-    const { data, error } = await supabaseAuth.auth.getUser(token);
+        if (error || !data.user) {
+            return res.status(401).json({
+                error: "Invalid or expired token"
+            });
+        }
 
-    if (error || !data.user) {
-        return res.status(401).json({
-            message: "Invalid or expired login session."
-        });
-    }
-
-    // Check whether this user is an approved shopkeeper
-    const { data: shopkeeper, error: approvalError } =
-        await supabase
+        const { data: shopkeeper, error: shopError } = await supabase
             .from("shopkeepers")
             .select("approved")
             .eq("user_id", data.user.id)
-            .maybeSingle();
+            .single();
 
-    if (approvalError) {
-        console.error("Approval check failed:", approvalError.message);
+        if (shopError || !shopkeeper || shopkeeper.approved !== true) {
+            return res.status(403).json({
+                error: "Shopkeeper account is not approved"
+            });
+        }
+
+        req.user = data.user;
+        next();
+
+    } catch (err) {
+        console.error("Shopkeeper authentication error:", err);
 
         return res.status(500).json({
-            message: "Unable to verify shopkeeper approval."
+            error: "Authentication failed due to a server error"
         });
     }
-
-    if (!shopkeeper || shopkeeper.approved !== true) {
-        return res.status(403).json({
-            message: "Your shopkeeper account is not approved yet."
-        });
-    }
-
-    req.user = data.user;
-    next();
 }
 
 // ==========================================
@@ -206,23 +209,58 @@ app.get("/books", async (req, res) => {
 });
 
 
-// GET: Search books
+// GET: Search books safely
 app.get("/books/search", async (req, res) => {
-    const search = (req.query.q || "").trim();
+    try {
+        if (typeof req.query.q !== "string") {
+            return res.status(400).json({
+                message: "Please enter a valid search term."
+            });
+        }
 
-    const { data, error } = await supabase
-        .from("books")
-        .select("*")
-        .or(`title.ilike.%${search}%,author.ilike.%${search}%,store.ilike.%${search}%`);
+        const search = req.query.q.trim();
 
-    if (error) {
-        console.error("Supabase error:", error.message);
-        return res.status(500).json({
-            message: "Unable to search books."
+        if (!search || search.length > 100) {
+            return res.status(400).json({
+                message: "Search must contain 1 to 100 characters."
+            });
+        }
+
+        // Allow letters, numbers, spaces, apostrophes and hyphens
+        const safeSearch = search
+            .replace(/[^\p{L}\p{N}\s'-]/gu, " ")
+            .trim();
+
+        if (!safeSearch) {
+            return res.status(400).json({
+                message: "Please enter a valid search term."
+            });
+        }
+
+        const { data, error } = await supabase
+            .from("books")
+            .select("*")
+            .or(
+                `title.ilike.%${safeSearch}%,author.ilike.%${safeSearch}%,store.ilike.%${safeSearch}%`
+            );
+
+        if (error) {
+            console.error("Supabase search error:", error.message);
+
+            return res.status(500).json({
+                message: "Unable to search books."
+            });
+        }
+
+        res.json(data);
+
+    } catch (err) {
+        console.error("Search error:", err);
+
+        res.status(500).json({
+            message: "Something went wrong while searching."
         });
     }
-
-    res.json(data);
 });
 
 
