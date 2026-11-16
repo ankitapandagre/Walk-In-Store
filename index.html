@@ -46,7 +46,6 @@
       <h1>Find the book.<br><span>Find the store. Walk in.</span></h1>
       <p class="hero-copy">Search for school books, novels and more — then find local bookstores that list them as available.</p>
       <a class="primary-button" href="#find-books">Find a book</a>
-      <p class="small-note">College mini-project demo · Availability is sample data</p>
     </section>
     <section class="seo-content">
   <div class="section-heading">
@@ -177,29 +176,9 @@
   <p id="authMessage"></p>
 </section>
     <section class="shopkeeper-section" id="shopkeeper"><div><p class="eyebrow">FOR LOCAL BOOKSELLERS</p><h2>Help readers find your store.</h2><p>In the full version, shopkeepers will be able to list books and keep their stock information updated.</p></div><button id="sellerButton" class="secondary-button" type="button">Preview add-book form</button></section>
-    <section id="sellerFormSection" class="seller-form-section" hidden>
-      <div class="section-heading"><p class="eyebrow">DEMO FORM</p><h2>Add a book listing</h2><p>This beginner demo adds a listing to this page only. It does not save to a real database.</p></div>
-      <form id="sellerForm" class="seller-form">
-        <label>Book title<input id="newTitle" required placeholder="e.g. The Diary of a Young Girl"></label>
-        <label>Author<input id="newAuthor" required placeholder="e.g. Anne Frank"></label>
-        <label>Store name<input id="newStore" required placeholder="e.g. Central Book House"></label>
-        <label>Area<select id="newArea" required><option value="Bhopal">Bhopal</option><option value="Delhi">Delhi</option><option value="Indore">Indore</option></select></label>
-        <label>Price (₹)<input id="newPrice" type="number" min="0" required placeholder="250"></label>
-        <label>Quantity<input id="newQuantity" type="number" min="0" required placeholder="3"></label>
-        <label>
-    Book cover image
-    <input
-        id="newImage"
-        type="file"
-        accept="image/*"
-    >
-</label>
-<button class="primary-button" type="submit">Add listing</button>
-      </form><p id="formMessage" class="form-message" aria-live="polite"></p>
-    </section>
-    <section class="notice"><strong>Demo note:</strong> Store names, prices, stock, and distances are example data. This version does not use live GPS, a real database, or a live map yet.</section>
+    
   </main>
-  <footer><a class="logo" href="#">📚 Walk-In Store</a><p>Find the book. Find the store. Walk in.</p><small>Beginner-friendly project prototype</small></footer>
+  <footer><a class="logo" href="#">📚 Walk-In Store</a><p>Find the book. Find the store. Walk in.</p></footer>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase.js"></script>
 <script src="script.js"></script>
