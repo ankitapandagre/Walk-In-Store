@@ -34,13 +34,14 @@ app.use(cors({
 app.use(express.json({ limit: "100kb" }));
 
 // Verify shopkeeper authentication
+
 async function verifyShopkeeper(req, res, next) {
     try {
         const token = req.headers.authorization?.split(" ")[1];
 
         if (!token) {
             return res.status(401).json({
-                error: "Authentication required"
+                message: "Please log in to add books."
             });
         }
 
@@ -48,19 +49,31 @@ async function verifyShopkeeper(req, res, next) {
 
         if (error || !data.user) {
             return res.status(401).json({
-                error: "Invalid or expired token"
+                message: "Your session is invalid or expired. Please log in again."
             });
         }
 
         const { data: shopkeeper, error: shopError } = await supabase
             .from("shopkeepers")
-            .select("approved")
+            .select("approved, status")
             .eq("user_id", data.user.id)
             .single();
 
-        if (shopError || !shopkeeper || shopkeeper.approved !== true) {
+        if (shopError || !shopkeeper) {
             return res.status(403).json({
-                error: "Shopkeeper account is not approved"
+                message: "Shopkeeper account not found. Please contact the administrator."
+            });
+        }
+
+        if (shopkeeper.status === "rejected") {
+            return res.status(403).json({
+                message: "Your shopkeeper application has been rejected. Please contact the administrator."
+            });
+        }
+
+        if (shopkeeper.approved !== true) {
+            return res.status(403).json({
+                message: "Your account is awaiting admin approval. You can add books after approval."
             });
         }
 
@@ -71,10 +84,11 @@ async function verifyShopkeeper(req, res, next) {
         console.error("Shopkeeper authentication error:", err);
 
         return res.status(500).json({
-            error: "Authentication failed due to a server error"
+            message: "Authentication failed due to a server error."
         });
     }
 }
+
 
 // ==========================================
 // VERIFY ADMIN AUTHENTICATION
