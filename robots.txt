@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://walk-in-store.vercel.app/sitemap.xml
